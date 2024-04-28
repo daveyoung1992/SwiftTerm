@@ -341,7 +341,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         lastLongSelect = pos
         lastLongSelectRegion = forRegion
 
-        items.append (UIMenuItem(title: "Reset", action: #selector(resetCmd)))
+//        items.append (UIMenuItem(title: "Reset", action: #selector(resetCmd)))
         
         // Configure the shared menu controller
         let menuController = UIMenuController.shared
@@ -497,10 +497,11 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
             return
         } else {
             let hit = calculateTapHit(gesture: gestureRecognizer).grid
-            selection.selectWordOrExpression(at: hit, in: terminal.buffer)
-            enableSelectionPanGesture()
-            showContextMenu (forRegion: makeContextMenuRegionForSelection(), pos: hit)
-            queuePendingDisplay()
+            if selection.selectWordOrExpression(at: hit, in: terminal.buffer){
+                enableSelectionPanGesture()
+                showContextMenu (forRegion: makeContextMenuRegionForSelection(), pos: hit)
+                queuePendingDisplay()
+            }
         }
     }
     

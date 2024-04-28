@@ -410,7 +410,7 @@ extension TerminalView {
                     hasUrl = chhas
                 }
             }
-            str.append(ch.code == 0 ? " " : ch.getCharacter ())
+            str.append(ch.code == 0 ? "\u{200B}" : ch.getCharacter ())
         }
         res.append (NSAttributedString(string: str, attributes: getAttributes(attr, withUrl: hasUrl)))
         updateSelectionAttributesIfNeeded(attributedLine: res, row: row, cols: cols)
@@ -484,6 +484,9 @@ extension TerminalView {
             assert (selectionRange.length >= 0)
             if (selectionRange.location + selectionRange.length >= cols) {
             }
+            print(selectionRange)
+            print(attributedString.length)
+            print(attributedString)
             attributedString.addAttribute(.selectionBackgroundColor, value: selectedTextBackgroundColor, range: selectionRange)
         }
     }
@@ -639,6 +642,7 @@ extension TerminalView {
             let ctline = CTLineCreateWithAttributedString(lineInfo.attrStr)
 
             var col = 0
+            var startX = 0.0
             for run in CTLineGetGlyphRuns(ctline) as? [CTRun] ?? [] {
                 let runGlyphsCount = CTRunGetGlyphCount(run)
                 let runAttributes = CTRunGetAttributes(run) as? [NSAttributedString.Key: Any] ?? [:]
@@ -648,9 +652,26 @@ extension TerminalView {
                     CTRunGetGlyphs(run, CFRange(), bufferPointer.baseAddress!)
                     count = runGlyphsCount
                 }
+//                let x = [CGPoint](unsafeUninitializedCapacity: runGlyphsCount) { (bufferPointer, count) in
+//                    CTRunGetPositions(run, CFRange(), bufferPointer.baseAddress!)
+//                    count = runGlyphsCount
+//                }
+//
+//                var positions = runGlyphs.enumerated().map { (i: Int, glyph: CGGlyph) -> CGPoint in
+////                    CGPoint(x: lineOrigin.x + (cellDimension.width * CGFloat(col + i)), y: lineOrigin.y + yOffset)
+//                    CGPoint(x: lineOrigin.x + x[i].x /* (cellDimension.width * CGFloat(col + i))*/, y: lineOrigin.y + ceil(lineLeading + lineDescent))
+//                }
+                
+                
+                // 系统默认会在中文和英文之间插入一个空白，这会导致后面在计算选择器的绘制位置时，出现偏差，所以这里在计算每个字符的位置时，不用CTRunGetPositions，而是根据前一个字符的位置和宽度来计算
+                let runRange = CTRunGetStringRange(run)
+                startX = ctline.calcWidth(from: 0, to: runRange.location)
 
                 var positions = runGlyphs.enumerated().map { (i: Int, glyph: CGGlyph) -> CGPoint in
-                    CGPoint(x: lineOrigin.x + (cellDimension.width * CGFloat(col + i)), y: lineOrigin.y + yOffset)
+//                    CGPoint(x: lineOrigin.x + (cellDimension.width * CGFloat(col + i)), y: lineOrigin.y + yOffset)
+                    let point = CGPoint(x: lineOrigin.x + startX /* (cellDimension.width * CGFloat(col + i))*/, y: lineOrigin.y + ceil(lineLeading + lineDescent))
+                    startX += run.widthForCharacter(at: i)
+                    return point
                 }
 
                 var backgroundColor: TTColor?
@@ -669,8 +690,11 @@ extension TerminalView {
                     context.setFillColor(backgroundColor.cgColor)
 
                     let transform = CGAffineTransform (translationX: positions[0].x, y: 0)
+                    
+                    let glyphWidth = run.totalWidth()
 
-                    var size = CGSize (width: CGFloat (cellDimension.width * CGFloat(runGlyphsCount)), height: cellDimension.height)
+//                    var size = CGSize (width: CGFloat (cellDimension.width * CGFloat(runGlyphsCount)), height: cellDimension.height)
+                    var size = CGSize (width: glyphWidth, height: cellDimension.height)
                     var origin: CGPoint = lineOrigin
 
                     #if (lastLineExtends)
@@ -774,8 +798,18 @@ extension TerminalView {
                 let lineOrigin = frame.height - lineOffset
                 
                 context.saveGState ()
+                
+                
+                // 通过计算当前行所有字符的显示宽度来定位光标的位置
+                let line = terminal.buffer.lines [row]
+                let lineInfo = buildAttributedString(row: row, line: line, cols: terminal.cols)
+                let ctline = CTLineCreateWithAttributedString(lineInfo.attrStr)
+                let startX = ctline.calcWidth(from: 0, to:  drawStart ? start.col : end.col)
+                
+                
                 let start = CGPoint (
-                    x: CGFloat (drawStart ? start.col : end.col) * cellDimension.width,
+                    x: startX,
+//                    x: CGFloat (drawStart ? start.col : end.col) * cellDimension.width,
                     y: lineOrigin)
                 let end = CGPoint(x: start.x, y: start.y + cellDimension.height)
                 
@@ -887,7 +921,14 @@ extension TerminalView {
         let offset = (cellDimension.height * (CGFloat(buffer.y-(buffer.yDisp-buffer.yBase)+1)))
         let lineOrigin = CGPoint(x: 0, y: frame.height - offset)
         #endif
-        caretView.frame.origin = CGPoint(x: lineOrigin.x + (cellDimension.width * doublePosition * CGFloat(buffer.x)), y: lineOrigin.y)
+        
+        // 通过计算当前行所有字符的显示宽度来定位光标的位置
+        let line = terminal.buffer.lines [vy]
+        let lineInfo = buildAttributedString(row: vy, line: line, cols: terminal.cols)
+        let ctline = CTLineCreateWithAttributedString(lineInfo.attrStr)
+        let w = ctline.totalWidth()
+        caretView.frame.origin = CGPoint(x: lineOrigin.x + w, y: lineOrigin.y)
+//        caretView.frame.origin = CGPoint(x: lineOrigin.x + (cellDimension.width * doublePosition * CGFloat(buffer.x)), y: lineOrigin.y)
         caretView.setText (ch: buffer.lines [vy][buffer.x])
     }
     
@@ -1310,3 +1351,66 @@ extension TerminalView {
     
 }
 #endif
+extension CTRun {
+    func totalWidth() -> CGFloat {
+        var width: CGFloat = 0.0
+//        CTRunGetTypographicBounds(self, CFRangeMake(0, 0), &width, nil, nil)
+        let runRange = CTRunGetStringRange(self)
+        for i in 0..<runRange.length{
+            width += self.widthForCharacter(at: i)
+        }
+        return width
+    }
+    func widthForCharacter(at index: Int) -> CGFloat {
+        let glyphCount = CTRunGetGlyphCount(self)
+        guard index >= 0 && index < glyphCount else {
+            return 0.0
+        }
+        
+        // 获取指定字符的字形
+        var glyph = CGGlyph()
+        CTRunGetGlyphs(self, CFRangeMake(index, 1), &glyph)
+        
+        // 获取指定字形的宽度
+        var glyphWidth: CGFloat = 0.0
+        var advances = CGSize.zero
+        CTRunGetAdvances(self, CFRangeMake(index, 1), &advances)
+        glyphWidth = advances.width
+        
+        return glyphWidth
+    }
+    func calcWidth(from:Int, to:Int) -> CGFloat{
+        var width: CGFloat = 0.0
+        guard to >= from else{
+            return width
+        }
+        let runRange = CTRunGetStringRange(self)
+        let start = max(0, from - runRange.location)
+        let end = max(1,min(runRange.length,to - from))
+        
+        for i in start..<end{
+            width += self.widthForCharacter(at: i)
+        }
+        return width
+    }
+}
+extension CTLine {
+    func calcWidth(from:Int, to:Int) -> CGFloat{
+        var w = 0.0
+        for run in CTLineGetGlyphRuns(self) as? [CTRun] ?? [] {
+            let runRange = CTRunGetStringRange(run)
+            if runRange.location >= to || runRange.location+runRange.length < from{
+                continue
+            }
+            w += run.calcWidth(from: from, to: to)
+        }
+        return w
+    }
+    func totalWidth() -> CGFloat {
+        var w = 0.0
+        for run in CTLineGetGlyphRuns(self) as? [CTRun] ?? [] {
+            w += run.totalWidth()
+        }
+        return w
+    }
+}

@@ -5220,7 +5220,10 @@ open class Terminal {
     
     func translateBufferLineToString (buffer: Buffer, line: Int, start: Int, end: Int) -> String
     {
-        buffer.translateBufferLineToString(lineIndex: line, trimRight: true, startCol: start, endCol: end).replacingOccurrences(of: "\u{0}", with: " ")
+        let re = try! NSRegularExpression(pattern: "(\\w)\\x0")
+        var str = buffer.translateBufferLineToString(lineIndex: line, trimRight: true, startCol: start, endCol: end)
+        str = re.stringByReplacingMatches(in: str, range: NSRange(location: 0, length: str.count), withTemplate: "$1")
+        return str.replacingOccurrences(of: "\u{0}", with: " ")
     }
 }
 

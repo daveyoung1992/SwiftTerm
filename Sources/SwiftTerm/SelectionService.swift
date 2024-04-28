@@ -273,9 +273,13 @@ class SelectionService: CustomDebugStringConvertible {
         var colScan = position.col
         var left = colScan
         while colScan >= 0 {
-            let ch = buffer.getChar(atBufferRelative: Position (col: colScan, row: position.row)).getCharacter()
-            if !includeFunc (ch) {
-                break
+            let ch = buffer.getChar(atBufferRelative: Position (col: colScan, row: position.row))
+            let char = ch.getCharacter()
+            if !includeFunc (char) {
+                // 对于\0进行特殊处理，因为中文两个字之间也会有一个\0
+                if ch.code != 0 ||  colScan-1 < 0 || buffer.getChar(atBufferRelative: Position (col: colScan-1, row: position.row)).code == 0{
+                    break
+                }
             }
             left = colScan
             colScan -= 1
@@ -286,9 +290,13 @@ class SelectionService: CustomDebugStringConvertible {
         var right = colScan
         let limit = terminal.cols
         while colScan < limit {
-            let ch = buffer.getChar(atBufferRelative: Position (col: colScan, row: position.row)).getCharacter()
-            if !includeFunc (ch) {
-                break
+            let ch = buffer.getChar(atBufferRelative: Position (col: colScan, row: position.row))
+            let char = ch.getCharacter()
+            if !includeFunc (char) {
+                // 对于\0进行特殊处理，因为中文两个字之间也会有一个\0
+                if  ch.code != 0 || colScan+1 >= limit || buffer.getChar(atBufferRelative: Position (col: colScan+1, row: position.row)).code == 0{
+                    break
+                }
             }
             colScan += 1
             right = colScan
@@ -383,8 +391,9 @@ class SelectionService: CustomDebugStringConvertible {
      * Implements the behavior to select the word at the specified position or an expression
      * which is a balanced set parenthesis, braces or brackets
      */
-    public func selectWordOrExpression (at uncheckedPosition: Position, in buffer: Buffer)
+    public func selectWordOrExpression (at uncheckedPosition: Position, in buffer: Buffer) -> Bool
     {
+        
 //        let position = Position(
 //            col: max (min (uncheckedPosition.col, buffer.cols-1), 0),
 //            row: max (min (uncheckedPosition.row, buffer.rows-1+buffer.yDisp), buffer.yDisp))
@@ -392,7 +401,8 @@ class SelectionService: CustomDebugStringConvertible {
                                  row: (max (uncheckedPosition.row, 0)))
         switch buffer.getChar(atBufferRelative: position).getCharacter() {
         case Character(UnicodeScalar(0)):
-            simpleScanSelection (from: position, in: buffer) { ch in ch == nullChar }
+            simpleScanSelection (from: position, in: buffer) { ch in ch.isLetter || ch.isNumber || ch == "." }
+//            simpleScanSelection (from: position, in: buffer) { ch in ch == nullChar }
         case " ":
             // Select all white space
             simpleScanSelection (from: position, in: buffer) { ch in ch == " " }
@@ -415,7 +425,11 @@ class SelectionService: CustomDebugStringConvertible {
             start = position
             end = position
         }
+        if start == end{
+            return false
+        }
         setActiveAndNotify()
+        return true
     }
     
     /**

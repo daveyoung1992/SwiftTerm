@@ -181,7 +181,8 @@ extension TerminalView: UITextInput {
     }
     
     public var beginningOfDocument: UITextPosition {
-        return xTextPosition(textInputStorage.startIndex)
+        return xTextPosition(1) // 暂时不明白textInputStorage的作用以及为什么这里要返回textInputStorage.startIndex， 通过返回一个非0的值，可支持键盘的长按删除功能
+//        return xTextPosition(textInputStorage.startIndex)
     }
     
     public var endOfDocument: UITextPosition {

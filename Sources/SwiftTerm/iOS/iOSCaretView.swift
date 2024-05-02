@@ -18,6 +18,7 @@ class CaretView: UIView {
     var ctline: CTLine?
     var bgColor: CGColor
     var tracksFocus = true
+    var _minWidth:CGFloat?
     
     public init (frame: CGRect, cursorStyle: CursorStyle, terminal: TerminalView)
     {
@@ -82,6 +83,7 @@ class CaretView: UIView {
             string: String (ch.getCharacter()),
             attributes: terminal?.getAttributedValue(ch.attribute, usingFg: caretColor, andBg: caretTextColor ?? terminal?.nativeForegroundColor ?? TTColor.black))
         ctline = CTLineCreateWithAttributedString(res)
+        self.frame.size = CGSize(width: max(getMinWidth(ch: ch),ctline!.totalWidth()), height: frame.height) // 根据字宽动态调整光标的宽度
         setNeedsDisplay(bounds)
     }
     
@@ -127,6 +129,17 @@ class CaretView: UIView {
         context.translateBy(x: 0, y: -frame.height)
 
         drawCursor(in: context, hasFocus: tracksFocus ? (superview?.isFirstResponder ?? true) : true)
+    }
+    
+    func getMinWidth(ch:CharData) -> CGFloat{
+        if _minWidth == nil{
+            let res = NSAttributedString (
+                string: "a",
+                attributes: terminal?.getAttributedValue(ch.attribute, usingFg: caretColor, andBg: caretTextColor ?? terminal?.nativeForegroundColor ?? TTColor.black))
+            let ctline = CTLineCreateWithAttributedString(res)
+            _minWidth = ctline.totalWidth()
+        }
+        return _minWidth!
     }
 
 }

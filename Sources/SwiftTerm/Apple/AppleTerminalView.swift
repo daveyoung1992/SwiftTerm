@@ -383,7 +383,7 @@ extension TerminalView {
     // Given a line of text with attributes, returns the NSAttributedString, suitable to be drawn
     // as a side effect, it updates the `images` array
     //
-    func buildAttributedString (row: Int, line: BufferLine, cols: Int, prefix: String = "") -> ViewLineInfo
+    func buildAttributedString (row: Int, line: BufferLine, cols: Int, prefix: String = "", updateSelection:Bool = true) -> ViewLineInfo
     {
         let res = NSMutableAttributedString ()
         var attr = Attribute.empty
@@ -413,7 +413,9 @@ extension TerminalView {
             str.append(ch.code == 0 ? "\u{200B}" : ch.getCharacter ())
         }
         res.append (NSAttributedString(string: str, attributes: getAttributes(attr, withUrl: hasUrl)))
-        updateSelectionAttributesIfNeeded(attributedLine: res, row: row, cols: cols)
+        if updateSelection{
+            updateSelectionAttributesIfNeeded(attributedLine: res, row: row, cols: cols)
+        }
         // This gives us a large chunk of our performance back, from 7.5 to 5.5 seconds on
         // time for x in 1 2 3 4 5 6; do cat UTF-8-demo.txt; done
         //res.fixAttributes(in: NSRange(location: 0, length: res.length))
@@ -551,7 +553,7 @@ extension TerminalView {
         }
         currentContext.restoreGState()
     }
-
+    
     
     // TODO: this should not render any lines outside the dirtyRect
     func drawTerminalContents (dirtyRect: TTRect, context: CGContext, bufferOffset: Int)
@@ -640,6 +642,7 @@ extension TerminalView {
             let line = terminal.buffer.lines [row]
             let lineInfo = buildAttributedString(row: row, line: line, cols: terminal.cols)
             let ctline = CTLineCreateWithAttributedString(lineInfo.attrStr)
+            let lineStr = line.translateToString()
 
             var col = 0
             var startX = 0.0
@@ -665,7 +668,7 @@ extension TerminalView {
                 
                 // 系统默认会在中文和英文之间插入一个空白，这会导致后面在计算选择器的绘制位置时，出现偏差，所以这里在计算每个字符的位置时，不用CTRunGetPositions，而是根据前一个字符的位置和宽度来计算
                 let runRange = CTRunGetStringRange(run)
-                startX = ctline.calcWidth(from: 0, to: runRange.location)
+                startX = calcGlyphsWidth(row: row, cols: runRange.location)
 
                 var positions = runGlyphs.enumerated().map { (i: Int, glyph: CGGlyph) -> CGPoint in
 //                    CGPoint(x: lineOrigin.x + (cellDimension.width * CGFloat(col + i)), y: lineOrigin.y + yOffset)
@@ -793,7 +796,7 @@ extension TerminalView {
         if selection.active {
             let start, end: Position
 
-            func drawSelectionHandle (drawStart: Bool, row: Int) {
+            func drawSelectionHandle (drawStart: Bool, row: Int) -> CGFloat {
                 let lineOffset = calcLineOffset(forRow: row)
                 let lineOrigin = frame.height - lineOffset
                 
@@ -801,11 +804,7 @@ extension TerminalView {
                 
                 
                 // 通过计算当前行所有字符的显示宽度来定位光标的位置
-                let line = terminal.buffer.lines [row]
-                let lineInfo = buildAttributedString(row: row, line: line, cols: terminal.cols)
-                let ctline = CTLineCreateWithAttributedString(lineInfo.attrStr)
-                let startX = ctline.calcWidth(from: 0, to:  drawStart ? start.col : end.col)
-                
+                let startX = calcGlyphsWidth(row: row, cols: drawStart ? start.col : end.col)
                 
                 let start = CGPoint (
                     x: startX,
@@ -829,6 +828,7 @@ extension TerminalView {
                 //TTColor.systemBlue.set ()
                 context.drawPath(using: .fillStroke)
                 context.restoreGState()
+                return startX
             }
             
             // Normalize the selection start/end, regardless of where it started
@@ -842,8 +842,19 @@ extension TerminalView {
                 end = sstart
             }
             
-            drawSelectionHandle (drawStart: true, row: start.row)
-            drawSelectionHandle (drawStart: false, row: end.row)
+            let startX = drawSelectionHandle (drawStart: true, row: start.row)
+            let endX = drawSelectionHandle (drawStart: false, row: end.row)
+            
+                            
+            func makeContextMenuRegionForSelection () -> CGRect {
+                let width = selection.isMultiLine ? frame.width : endX - startX
+                
+                return CGRect (x: startX,
+                               y: CGFloat (selection.start.row)*cellDimension.height,
+                               width: width,
+                               height: CGFloat (selection.end.row-selection.start.row+1)*cellDimension.height)
+            }
+            showContextMenu (forRegion: makeContextMenuRegionForSelection(), pos: lastLongSelect!)
         }
 #endif
     }
@@ -923,10 +934,7 @@ extension TerminalView {
         #endif
         
         // 通过计算当前行所有字符的显示宽度来定位光标的位置
-        let line = terminal.buffer.lines [vy]
-        let lineInfo = buildAttributedString(row: vy, line: line, cols: terminal.cols)
-        let ctline = CTLineCreateWithAttributedString(lineInfo.attrStr)
-        let w = ctline.totalWidth()
+        let w = calcGlyphsWidth(row: vy, cols: buffer.x)
         caretView.frame.origin = CGPoint(x: lineOrigin.x + w, y: lineOrigin.y)
 //        caretView.frame.origin = CGPoint(x: lineOrigin.x + (cellDimension.width * doublePosition * CGFloat(buffer.x)), y: lineOrigin.y)
         caretView.setText (ch: buffer.lines [vy][buffer.x])
@@ -1349,12 +1357,29 @@ extension TerminalView {
         selection.selectNone()
     }
     
+    
+    
+    func calcGlyphsWidth(row: Int, cols: Int) -> CGFloat{
+        /*最开始的计算方式是，一次实例化一个CTLine,然后通过传入的From，To两个参数，转换为对CTRun对应位置来计算的方式，
+         但是在实际应用中发现一个奇怪的现象，比如CTRun，如果以\0开头，计算就会出现误差，比如一个字符串："\0abc",如果我
+         的需求是计算到b的宽度，会发现实际得到的值是“abc”三个字符的宽度，通过排查发现，他在计算\0的字符宽度时，不是预期
+         的0宽度，而当计算到字符c的宽度时，得到了宽度为0的结果，所以当我计算整个字符串的宽度时，得到的宽度是对的，但是，
+         如果只计算到b时，就会得到错误的宽度。所以后面调整了计算方式，每次计算，都用指定的列数，重新实例化一个CTLine，然后
+         计算整个CTLine的宽度，来保证结果的正确性。
+        */
+        
+        
+        let line = terminal.buffer.lines [row]
+        let lineInfo = buildAttributedString(row: row, line: line, cols: cols,updateSelection: false)
+        let ctline = CTLineCreateWithAttributedString(lineInfo.attrStr)
+        return ctline.totalWidth()
+    }
+    
 }
 #endif
 extension CTRun {
     func totalWidth() -> CGFloat {
         var width: CGFloat = 0.0
-//        CTRunGetTypographicBounds(self, CFRangeMake(0, 0), &width, nil, nil)
         let runRange = CTRunGetStringRange(self)
         for i in 0..<runRange.length{
             width += self.widthForCharacter(at: i)
@@ -1379,33 +1404,8 @@ extension CTRun {
         
         return glyphWidth
     }
-    func calcWidth(from:Int, to:Int) -> CGFloat{
-        var width: CGFloat = 0.0
-        guard to >= from else{
-            return width
-        }
-        let runRange = CTRunGetStringRange(self)
-        let start = max(0, from - runRange.location)
-        let end = max(1,min(runRange.length,to - from))
-        
-        for i in start..<end{
-            width += self.widthForCharacter(at: i)
-        }
-        return width
-    }
 }
 extension CTLine {
-    func calcWidth(from:Int, to:Int) -> CGFloat{
-        var w = 0.0
-        for run in CTLineGetGlyphRuns(self) as? [CTRun] ?? [] {
-            let runRange = CTRunGetStringRange(run)
-            if runRange.location >= to || runRange.location+runRange.length < from{
-                continue
-            }
-            w += run.calcWidth(from: from, to: to)
-        }
-        return w
-    }
     func totalWidth() -> CGFloat {
         var w = 0.0
         for run in CTLineGetGlyphRuns(self) as? [CTRun] ?? [] {

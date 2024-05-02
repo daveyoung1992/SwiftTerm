@@ -648,8 +648,14 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     var panTask: Task<(),Never>?
     
     @objc func panSelectionHandler (_ gestureRecognizer: UIPanGestureRecognizer) {
-        func near (_ pos1: Position, _ pos2: Position) -> Bool {
-            return abs (pos1.col-pos2.col) < 3 && abs (pos1.row-pos2.row) < 2
+//        func near (_ pos1: Position, _ pos2: Position) -> Bool {
+//            return abs (pos1.col-pos2.col) < 3 && abs (pos1.row-pos2.row) < 2
+//        }
+        
+        func distanceBetweenPoints(_ point1: Position, _ point2: Position) -> CGFloat {
+            let deltaX = CGFloat( point2.col - point1.col)
+            let deltaY = CGFloat( point2.row - point1.row)
+            return sqrt(deltaX * deltaX + deltaY * deltaY)
         }
         
         switch gestureRecognizer.state {
@@ -657,13 +663,23 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
             let hit = calculateTapHit(gesture: gestureRecognizer).grid
             if selection.active {
                 var extend = false
-                if near (selection.start, hit) {
-                    selection.pivot = selection.end
-                    extend = true
-                } else if near (selection.end, hit) {
+                let distanceOfStart = distanceBetweenPoints(hit, selection.start)
+                let distanceOfEnd = distanceBetweenPoints(hit, selection.end)
+                if distanceOfStart > distanceOfEnd{
+                                        selection.pivot = selection.end
+                                        extend = true
+                }
+                else if distanceOfStart < distanceOfEnd{
                     selection.pivot = selection.start
                     extend = true
                 }
+//                if near (selection.start, hit) {
+//                    selection.pivot = selection.end
+//                    extend = true
+//                } else if near (selection.end, hit) {
+//                    selection.pivot = selection.start
+//                    extend = true
+//                }
                 if extend {
                     selection.pivotExtend(bufferPosition: hit)
                     setNeedsDisplay()

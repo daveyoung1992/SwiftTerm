@@ -211,17 +211,45 @@ class SelectionService: CustomDebugStringConvertible {
         guard let pivot = pivot else {
             return
         }
-        switch Position.compare (bufferPosition, pivot) {
-        case .after:
-            start = pivot
-            end = bufferPosition
-        case .before:
-            start = bufferPosition
-            end = pivot
-        case .equal:
-            start = pivot
-            end = pivot
+        if pivot == end{
+            switch Position.compare (bufferPosition, pivot) {
+            case .after:
+                end = bufferPosition
+                self.pivot = end
+            case .before:
+                end = start
+                start = bufferPosition
+                self.pivot = start
+            case .equal:
+                return
+            }
         }
+        else{
+            switch Position.compare (bufferPosition, pivot) {
+            case .after:
+                start = end
+                end = bufferPosition
+                self.pivot = end
+            case .before:
+                start = bufferPosition
+                self.pivot = start
+            case .equal:
+                return
+            }
+        }
+        
+        // 看不懂原来的方法是什么思路
+        //        switch Position.compare (bufferPosition, pivot) {
+        //        case .after:
+        //            start = pivot
+        //            end = bufferPosition
+        //        case .before:
+        //            start = bufferPosition
+        //            end = pivot
+        //        case .equal:
+        //            start = pivot
+        //            end = pivot
+        //        }
         
         setActiveAndNotify()
     }

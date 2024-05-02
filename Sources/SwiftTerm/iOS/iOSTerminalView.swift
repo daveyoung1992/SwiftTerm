@@ -21,6 +21,63 @@ import os
 @available(iOS 14.0, *)
 internal var log: Logger = Logger(subsystem: "org.tirania.SwiftTerm", category: "msg")
 
+class ZoomView:UIImageView{
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        setup()
+    }
+    
+    private func setup() {
+        self.layer.borderWidth = 2.0
+        if #available(iOS 15.0, *) {
+            self.layer.borderColor = UIColor.tintColor.cgColor
+        }
+        else{
+            self.layer.borderColor = UIColor.blue.cgColor
+        }
+        self.layer.cornerRadius = bounds.height/2
+        self.layer.masksToBounds = true
+    }
+    
+    
+    func show(at point: CGPoint,offsetY:CGFloat, in view: UIView) {
+        var position = CGPoint(x: point.x - bounds.width / 2, y: point.y - bounds.height - 40 - offsetY)
+        print(position)
+        if position.y < 0{ // 上方没有足够的空间
+            position.y = 0
+            if frame.width + 40 > point.x{ // 左边没有足够的空间
+                position.x = point.x + 40
+            }
+            else{
+                position.x = point.x - frame.width - 40
+            }
+        }
+        self.frame.origin = position
+        
+        let scale: CGFloat = 1.5
+        let magnifierSize = CGSize(width: bounds.width / scale, height: bounds.height / scale)
+        
+        let rect = CGRect(origin: CGPoint(x: point.x - magnifierSize.width / 2, y: point.y - magnifierSize.height / 2), size: magnifierSize)
+        self.image = view.snapshot(rect: rect)
+    }
+}
+
+extension UIView {
+    func snapshot(rect: CGRect) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(rect.size, false, 0.0)
+        defer { UIGraphicsEndImageContext() }
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+        context.translateBy(x: -rect.origin.x, y: -rect.origin.y)
+        layer.render(in: context)
+        return UIGraphicsGetImageFromCurrentImageContext()
+    }
+}
 /**
  * TerminalView provides an AppKit/UIKit front-end to the `Terminal` terminal emulator.
  * It is up to a subclass to either wire the terminal emulator to a remote terminal
@@ -291,7 +348,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     /// Invoked when the user has long-pressed and then clicked "Select"
     @objc public override func select (_ sender: Any?)  {
         if let loc = lastLongSelect {
-            selection.selectWordOrExpression(at: Position (col: loc.col, row: loc.row), in: terminal.buffer)
+            _ = selection.selectWordOrExpression(at: Position (col: loc.col, row: loc.row), in: terminal.buffer)
             enableSelectionPanGesture()
             DispatchQueue.main.async {
                 self.showContextMenu(forRegion:  self.makeContextMenuRegionForSelection(), pos: loc)
@@ -336,6 +393,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     ///  - pos: the location where this was triggered in the buffer, it used at a later point
     ///  to auto-select a word
     func showContextMenu (forRegion: CGRect, pos: Position) {
+        if isSelectionHandlerDragging {return} // 如果正在拖动选择框，则不显示
         var items: [UIMenuItem] = []
         
         lastLongSelect = pos
@@ -350,6 +408,13 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         // Set the location of the menu in the view.
         //let menuLocation = CGRect (origin: at, size: CGSize (width: cellDimension.width, height: cellDimension.height))
         menuController.showMenu(from: self, rect: forRegion)
+    }
+    
+    func hideContextMenu(){
+        
+        // Configure the shared menu controller
+        let menuController = UIMenuController.shared
+        menuController.hideMenu()
     }
     
     // This is a position relative to the buffer
@@ -647,6 +712,24 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     var panStart: Position?
     var panTask: Task<(),Never>?
     
+    var zoomView:ZoomView?
+    
+    func showZoomView(at point:CGPoint, grid: Position){
+        if zoomView == nil{
+            zoomView = ZoomView(frame: CGRect(x: 0, y: 0, width: cellDimension.height * 7, height: cellDimension.height*4))
+            superview?.addSubview(zoomView!)
+        }
+        zoomView?.isHidden = false
+        
+        zoomView?.show(at: CGPoint(x: point.x, y: CGFloat(grid.row) * cellDimension.height + cellDimension.height/2),offsetY: contentOffset.y, in: self)
+    }
+    
+    func hideZoomView(){
+        zoomView?.isHidden = true
+    }
+    
+    var isSelectionHandlerDragging:Bool = false
+    
     @objc func panSelectionHandler (_ gestureRecognizer: UIPanGestureRecognizer) {
 //        func near (_ pos1: Position, _ pos2: Position) -> Bool {
 //            return abs (pos1.col-pos2.col) < 3 && abs (pos1.row-pos2.row) < 2
@@ -660,7 +743,10 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         
         switch gestureRecognizer.state {
         case .began:
+            isSelectionHandlerDragging = true
+            hideContextMenu()
             let hit = calculateTapHit(gesture: gestureRecognizer).grid
+            showZoomView(at: gestureRecognizer.location(in: self), grid: hit)
             if selection.active {
                 var extend = false
                 let distanceOfStart = distanceBetweenPoints(hit, selection.start)
@@ -690,6 +776,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         case .changed:
             let absoluteY = gestureRecognizer.location (in: self).y - contentOffset.y
             let hit = calculateTapHit(gesture: gestureRecognizer).grid
+            showZoomView(at: gestureRecognizer.location(in: self), grid: hit)
             if selection.active {
                 stopSelectionTimer()
                 selection.pivotExtend(bufferPosition: hit)
@@ -715,15 +802,21 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                 }
             }
         case .ended:
+            isSelectionHandlerDragging = false
+            hideZoomView()
             stopSelectionTimer()
             if selection.active {
                 showContextMenu (forRegion: makeContextMenuRegionForSelection(), pos: calculateTapHit(gesture: gestureRecognizer).grid)
             }
             break
         case .cancelled:
+            isSelectionHandlerDragging = false
+            hideZoomView()
             stopSelectionTimer()
             selection.active = false
         default:
+            isSelectionHandlerDragging = false
+            hideZoomView()
             break
         }
     }

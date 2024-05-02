@@ -486,9 +486,6 @@ extension TerminalView {
             assert (selectionRange.length >= 0)
             if (selectionRange.location + selectionRange.length >= cols) {
             }
-            print(selectionRange)
-            print(attributedString.length)
-            print(attributedString)
             attributedString.addAttribute(.selectionBackgroundColor, value: selectedTextBackgroundColor, range: selectionRange)
         }
     }

@@ -53,7 +53,7 @@ extension TerminalView {
         resetCaches()
         self.cellDimension = computeFontDimensions ()
         let newCols = Int(frame.width / cellDimension.width)
-        let newRows = Int(frame.height / cellDimension.height)
+        let newRows = Int(floor(frame.height / cellDimension.height))
         resize(cols: newCols, rows: newRows)
         updateCaretView()
     }
@@ -821,8 +821,9 @@ extension TerminalView {
                 context.addEllipse(in: rect)
                 context.closePath()
                 context.setLineWidth(2)
-                selectionHandleColor.set ()
-                //TTColor.systemBlue.set ()
+                tintColor.set()
+//                selectionHandleColor.set ()
+//                //TTColor.systemBlue.set ()
                 context.drawPath(using: .fillStroke)
                 context.restoreGState()
                 return startX

@@ -21,7 +21,7 @@ import os
 @available(iOS 14.0, *)
 internal var log: Logger = Logger(subsystem: "org.tirania.SwiftTerm", category: "msg")
 
-class ZoomView:UIImageView{
+public class ZoomView:UIImageView{
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -35,20 +35,27 @@ class ZoomView:UIImageView{
     
     private func setup() {
         self.layer.borderWidth = 2.0
-        if #available(iOS 15.0, *) {
-            self.layer.borderColor = UIColor.tintColor.cgColor
-        }
-        else{
-            self.layer.borderColor = UIColor.blue.cgColor
-        }
+        self.layer.borderColor = tintColor.cgColor
+//        if #available(iOS 15.0, *) {
+//            self.layer.borderColor = UIView.appearance().tintColor.cgColor
+//        }
+//        else{
+//            self.layer.borderColor = UIColor.blue.cgColor
+//        }
         self.layer.cornerRadius = bounds.height/2
         self.layer.masksToBounds = true
+    }
+    
+    override public var tintColor: UIColor!{
+        didSet{
+            self.layer.borderColor = tintColor.cgColor
+        }
     }
     
     
     func show(at point: CGPoint,offsetY:CGFloat, in view: UIView) {
         var position = CGPoint(x: point.x - bounds.width / 2, y: point.y - bounds.height - 40 - offsetY)
-        print(position)
+//        print(position)
         if position.y < 0{ // 上方没有足够的空间
             position.y = 0
             if frame.width + 40 > point.x{ // 左边没有足够的空间
@@ -712,11 +719,12 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     var panStart: Position?
     var panTask: Task<(),Never>?
     
-    var zoomView:ZoomView?
+    public var zoomView:ZoomView?
     
     func showZoomView(at point:CGPoint, grid: Position){
         if zoomView == nil{
             zoomView = ZoomView(frame: CGRect(x: 0, y: 0, width: cellDimension.height * 7, height: cellDimension.height*4))
+            zoomView?.tintColor = tintColor
             superview?.addSubview(zoomView!)
         }
         zoomView?.isHidden = false
@@ -726,6 +734,12 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     
     func hideZoomView(){
         zoomView?.isHidden = true
+    }
+    
+    override open var tintColor: UIColor!{
+        didSet{
+            zoomView?.tintColor = tintColor
+        }
     }
     
     var isSelectionHandlerDragging:Bool = false
@@ -1099,9 +1113,13 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     func updateScroller ()
     {
         contentSize = CGSize (width: CGFloat (terminal.buffer.cols) * cellDimension.width,
-                              height: CGFloat (terminal.buffer.lines.count) * cellDimension.height)
+                              height: CGFloat (terminal.buffer.lines.count+1) * cellDimension.height)
         //contentOffset = CGPoint (x: 0, y: CGFloat (terminal.buffer.lines.count-terminal.rows)*cellDimension.height)
-        contentOffset = CGPoint (x: 0, y: CGFloat (terminal.buffer.lines.count-terminal.rows)*cellDimension.height)
+        var rows = terminal.buffer.lines.count-terminal.rows
+        if rows > 0{
+            rows += 1
+        }
+        contentOffset = CGPoint (x: 0, y: CGFloat(rows) * cellDimension.height)
         //Xscroller.doubleValue = scrollPosition
         //Xscroller.knobProportion = scrollThumbsize
     }
@@ -1172,11 +1190,12 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     // iOS Keyboard input
     
     // UITextInputTraits
-    public var keyboardType: UIKeyboardType {
-        get {
-            .`default`
-        }
-    }
+    public var keyboardType: UIKeyboardType = .default // 将键盘类型调整为可读写，让自动切换键盘成为可能
+//    {
+//        get {
+//            .`default`
+//        }
+//    }
     
     public var keyboardAppearance: UIKeyboardAppearance = .`default`
     public var returnKeyType: UIReturnKeyType = .`default`
@@ -1228,7 +1247,11 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
 
     func ensureCaretIsVisible ()
     {
-        contentOffset = CGPoint (x: 0, y: CGFloat (terminal.buffer.lines.count-terminal.rows)*cellDimension.height)
+        var rows = terminal.buffer.lines.count-terminal.rows
+        if rows > 0{
+            rows += 1
+        }
+        contentOffset = CGPoint (x: 0, y: CGFloat (rows)*cellDimension.height)
     }
     
 

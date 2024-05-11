@@ -390,7 +390,7 @@ class BackgroundSelectedButton: UIButton {
     
     override var isSelected: Bool {
         didSet {
-            self.backgroundColor = isSelected ? UIView().tintColor : color
+            self.backgroundColor = isSelected ? UIView.appearance().tintColor : color
         }
     }
 }

@@ -61,6 +61,7 @@ extension TerminalView {
     func updateCaretView ()
     {
         guard let caretView else { return }
+        caretView._minWidth = cellDimension.width
         caretView.frame.size = CGSize(width: cellDimension.width, height: cellDimension.height)
         caretView.updateCursorStyle()
     }

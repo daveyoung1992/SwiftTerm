@@ -4563,7 +4563,7 @@ open class Terminal {
         options.rows = rows
         options.cols = cols
         let savedCursorHidden = cursorHidden
-        setup (isReset: true)
+        setup (isReset: false)
         cursorHidden = savedCursorHidden
         refresh (startRow: 0, endRow: rows-1)
         syncScrollArea ()

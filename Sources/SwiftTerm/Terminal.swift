@@ -225,6 +225,10 @@ public protocol TerminalDelegate: AnyObject {
      *  - preserveAspectRatio: if set, one of the dimensions will track the hardcoded setting set for the other.
      */
     func createImage (source: Terminal, data: Data, width: ImageSizeRequest, height: ImageSizeRequest, preserveAspectRatio: Bool)
+    
+    
+    // 当选择框显示或隐藏时回调，用于显示和隐藏NavitaionView的返回按钮，不隐藏的情况下，选择文字时，容易误触发返回操作（从屏幕左侧右划）
+    func selectionHandlerShowStateChange(isShow:Bool)
 }
 
 /// Enumeration passed to the TerminalDelegate.createImage to configure

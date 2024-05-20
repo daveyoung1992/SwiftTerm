@@ -105,6 +105,7 @@ extension UIView {
  * defaults, otherwise, this uses its own set of defaults colors.
  */
 open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollViewDelegate, TerminalDelegate {
+    
     struct FontSet {
         public let normal: UIFont
         let bold: UIFont
@@ -853,8 +854,14 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         panMouseGesture = nil
     }
     
+    
+    open func selectionHandlerShowStateChange(isShow: Bool) {
+        
+    }
+    
     var panSelectionGesture: UIPanGestureRecognizer?
     func enableSelectionPanGesture () {
+        selectionHandlerShowStateChange(isShow: true)
         guard panSelectionGesture == nil else {
             return
         }
@@ -864,6 +871,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     }
     
     func disableSelectionPanGesture() {
+        selectionHandlerShowStateChange(isShow: false)
         guard let gesture = panSelectionGesture else {
             return
         }

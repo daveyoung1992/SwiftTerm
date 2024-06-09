@@ -263,11 +263,12 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         }
     }
     
-    public var caretPosition:CGPoint{
+    public var caretPosition:CGRect{
         if let origin=caretView?.frame.origin,let size=caretView?.frame.size{
-            return CGPoint(x: origin.x+size.width, y: origin.y+size.height)
+            print("origin:\(origin)")
+            return CGRect(x: origin.x+size.width, y: origin.y-contentOffset.y+size.height, width: size.width, height: size.height)
         }
-        return CGPoint.zero
+        return CGRect.zero
     }
     
     /// Sets the various fonts to be used by the terminal to render text, their size is ignored

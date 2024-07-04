@@ -265,7 +265,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     
     public var caretPosition:CGRect{
         if let origin=caretView?.frame.origin,let size=caretView?.frame.size{
-            print("origin:\(origin)")
+//            print("origin:\(origin)")
             return CGRect(x: origin.x+size.width, y: origin.y-contentOffset.y+size.height, width: size.width, height: size.height)
         }
         return CGRect.zero

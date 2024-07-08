@@ -274,6 +274,10 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         return CGRect.zero
     }
     
+//    public var caretTextPosition:Position{
+//        return transPositionfrom(point: caretPosition.origin)
+//    }
+    
     /// Sets the various fonts to be used by the terminal to render text, their size is ignored
     /// - Parameters:
     ///  - normal: The font used by default for most text
@@ -469,6 +473,35 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     
     /// This controls whether the backspace should send ^? or ^H, the default is ^?
     public var backspaceSendsControlH: Bool = false
+    
+//    private func transPositionfrom(point:CGPoint) -> Position{
+//        var col = Int (point.x / cellDimension.width)
+//        let row = Int (point.y / cellDimension.height)
+//        if row < 0 {
+//            return Position(col: 0, row: 0)
+//        }
+//        
+//        col = min (max (0, col), terminal.cols-1)
+//        
+//        // 因为中文的原因，无法做到所有字符等宽，上面的计算方式会存在误差，这里通过计算到对应列的实际宽度的方式来对上面计算值做一个矫正
+//        var w:CGFloat = calcGlyphsWidth(row: row, cols: col)
+//        if abs(w-point.x)>cellDimension.width{
+//            if w>point.x{
+//                while w > point.x && abs(w-point.x) > cellDimension.width && col > 0{
+//                    col -= 1
+//                    w = calcGlyphsWidth(row: row, cols: col)
+//                }
+//            }
+//            else{
+//                while w < point.x && abs(w-point.x) > cellDimension.width && col < terminal.cols-1{
+//                    col += 1
+//                    w = calcGlyphsWidth(row: row, cols: col)
+//                }
+//            }
+//        }
+//        
+//        return Position(col: col, row: row)
+//    }
     
     /// Returns a buffer-relative position, instead of a screen position.
     /// - Parameters:

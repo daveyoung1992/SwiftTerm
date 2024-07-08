@@ -4988,12 +4988,14 @@ open class Terminal {
     
     public func setTitle (text: String)
     {
+        print("terminalTitle:\(text)")
         terminalTitle = text
         tdel?.setTerminalTitle(source: self, title: text)
     }
 
     public func setIconTitle (text: String)
     {
+        print("iconTitle:\(text)")
         iconTitle = text
         tdel?.setTerminalIconTitle(source: self, title: text)
     }

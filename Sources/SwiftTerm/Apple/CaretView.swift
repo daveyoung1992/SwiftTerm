@@ -20,12 +20,12 @@ extension CaretView {
         context.fill ([bounds])
         
         if !hasFocus {
-            context.setStrokeColor(bgColor)
+            context.setStrokeColor(caretColor.cgColor)
             context.setLineWidth(2)
             context.stroke(bounds)
             return
         }
-        context.setFillColor(bgColor)
+        context.setFillColor(caretColor.cgColor)
         let region: CGRect
         switch style {
         case .blinkBar, .steadyBar:

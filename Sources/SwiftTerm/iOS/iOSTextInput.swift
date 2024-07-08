@@ -331,36 +331,43 @@ extension TerminalView: UITextInput {
     public func beginFloatingCursor(at point: CGPoint)
     {
         lastFloatingCursorLocation = point
+        onSpaceKeyPressed?(point)
+        print("space key is pressed")
     }
     public func updateFloatingCursor(at point: CGPoint)
     {
-        guard let lastPosition = lastFloatingCursorLocation else {
-            return
+        if let onSpaceKeyMove{
+            onSpaceKeyMove(point)
         }
-        lastFloatingCursorLocation = point
-        let deltax = lastPosition.x - point.x
-        
-        
-        if abs (deltax) > 2 {
-            var data: [UInt8]
-            if deltax > 0 {
-                data = terminal.applicationCursor ? EscapeSequences.moveLeftApp : EscapeSequences.moveLeftNormal
-            } else {
-                data = terminal.applicationCursor ? EscapeSequences.moveRightApp : EscapeSequences.moveRightNormal
+        else{
+            guard let lastPosition = lastFloatingCursorLocation else {
+                return
             }
-            send (data)
-        }
-        if terminal.buffers.isAlternateBuffer {
-            let deltay = lastPosition.y - point.y
-
-            var data: [UInt8]
-            if abs (deltay) > 2 {
-                if deltay > 0 {
-                    data = terminal.applicationCursor ? EscapeSequences.moveUpApp : EscapeSequences.moveUpNormal
+            lastFloatingCursorLocation = point
+            let deltax = lastPosition.x - point.x
+            
+            
+            if abs (deltax) > 2 {
+                var data: [UInt8]
+                if deltax > 0 {
+                    data = terminal.applicationCursor ? EscapeSequences.moveLeftApp : EscapeSequences.moveLeftNormal
                 } else {
-                    data = terminal.applicationCursor ? EscapeSequences.moveDownApp : EscapeSequences.moveDownNormal
+                    data = terminal.applicationCursor ? EscapeSequences.moveRightApp : EscapeSequences.moveRightNormal
                 }
                 send (data)
+            }
+            if terminal.buffers.isAlternateBuffer {
+                let deltay = lastPosition.y - point.y
+                
+                var data: [UInt8]
+                if abs (deltay) > 2 {
+                    if deltay > 0 {
+                        data = terminal.applicationCursor ? EscapeSequences.moveUpApp : EscapeSequences.moveUpNormal
+                    } else {
+                        data = terminal.applicationCursor ? EscapeSequences.moveDownApp : EscapeSequences.moveDownNormal
+                    }
+                    send (data)
+                }
             }
         }
     }
@@ -368,6 +375,8 @@ extension TerminalView: UITextInput {
     public func endFloatingCursor()
     {
         lastFloatingCursorLocation = nil
+        print("space key is release")
+        onSpaceKeyReleased?()
     }
 }
 

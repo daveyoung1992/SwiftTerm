@@ -163,6 +163,9 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         }
     }
     
+    public var onSpaceKeyPressed:((CGPoint)->Void)?
+    public var onSpaceKeyMove:((CGPoint)->Void)?
+    public var onSpaceKeyReleased:(()->Void)?
     /**
      * The delegate that the TerminalView uses to interact with its hosting
      */

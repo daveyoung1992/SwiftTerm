@@ -280,6 +280,8 @@ open class Terminal {
     var tabStopWidth : Int = 8
     var options: TerminalOptions
     
+    public var onCursorModeChange:((Bool)->Void)?
+    
     // The current buffers
     var buffers : BufferSet!
     
@@ -287,7 +289,11 @@ open class Terminal {
     var applicationKeypad : Bool = false
     
     // Whether the terminal is operating in application cursor mode
-    public var applicationCursor : Bool = false
+    public var applicationCursor : Bool = false{
+        didSet{
+            onCursorModeChange?(applicationCursor)
+        }
+    }
     
     // You can ignore most of the defaults set here, the function
     // reset() will do that again

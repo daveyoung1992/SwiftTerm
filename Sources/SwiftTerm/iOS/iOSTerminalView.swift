@@ -609,6 +609,9 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                     if abs (tapLoc.col-terminal.buffer.x) < 4 && abs (tapLoc.row - cursorRow) < 2 {
                         showContextMenu (forRegion: makeContextMenuRegionForTap (point: location), pos: tapLoc)
                     }
+                    else{
+                        let _ = resignFirstResponder()
+                    }
                 }
             }
             queuePendingDisplay()

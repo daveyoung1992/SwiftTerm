@@ -582,6 +582,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     
     @objc func singleTap (_ gestureRecognizer: UITapGestureRecognizer)
     {
+        timer?.invalidate()
         if isFirstResponder {
             guard gestureRecognizer.view != nil else { return }
                  
@@ -610,7 +611,10 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                         showContextMenu (forRegion: makeContextMenuRegionForTap (point: location), pos: tapLoc)
                     }
                     else{
-                        let _ = resignFirstResponder()
+                        timer=Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: { _ in
+                            let _ = self.resignFirstResponder()
+                        })
+                        
                     }
                 }
             }
@@ -620,8 +624,11 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
         }
     }
     
+    var timer:Timer?
+    
     @objc func doubleTap (_ gestureRecognizer: UITapGestureRecognizer)
     {
+        timer?.invalidate()
         guard gestureRecognizer.view != nil else { return }
                
         if gestureRecognizer.state != .ended {

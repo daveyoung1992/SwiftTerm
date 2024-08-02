@@ -1867,13 +1867,20 @@ open class Terminal {
     func setCursor (col: Int, row: Int)
     {
         updateRange(buffer.y)
+        let newX:Int
         if originMode {
-            buffer.x = col + (usingMargins () ? buffer.marginLeft : 0)
+            newX = col + (usingMargins () ? buffer.marginLeft : 0)
             buffer.y = buffer.scrollTop + row
         } else {
-            buffer.x = col
+            newX = col
             buffer.y = row
         }
+        for i in 0...newX{
+            if buffer.lines[buffer.y][i].code == 0{
+                buffer.lines[buffer.y][i].code = 32
+            }
+        }
+        buffer.x = newX
         restrictCursor ()
     }
 
@@ -1944,8 +1951,13 @@ open class Terminal {
     {
         let buffer = self.buffer
         let param = max (pars.count > 0 ? pars [0] : 1, 1)
-
-        buffer.x = (usingMargins() ? buffer.marginLeft : 0) + min (param - 1, cols - 1)
+        let newX = (usingMargins() ? buffer.marginLeft : 0) + min (param - 1, cols - 1)
+        for i in 0...newX{
+            if buffer.lines[buffer.y][i].code == 0{
+                buffer.lines[buffer.y][i].code = 32
+            }
+        }
+        buffer.x = newX
     }
 
     //
@@ -2048,11 +2060,11 @@ open class Terminal {
     // - Parameter start: first cell index to be erased
     // - Parameter end:   end - 1 is last erased cell
     //
-    func eraseInBufferLine (y: Int, start: Int, end: Int, clearWrap: Bool = false, clearRenderMode: Bool = false)
+    func eraseInBufferLine (y: Int, start: Int, end: Int, clearWrap: Bool = false, clearRenderMode: Bool = false,char:Character = " ")
     {
         let line = buffer.lines [buffer.yBase + y]
         line.images = nil
-        let cd = CharData (attribute: eraseAttr ())
+        let cd = CharData (attribute: eraseAttr (),char: char)
         line.replaceCells (start: start, end: end, fillData: cd)
         if clearWrap {
             line.isWrapped = false
@@ -4381,6 +4393,7 @@ open class Terminal {
      */
     public func parse (buffer: ArraySlice<UInt8>)
     {
+        print(String(bytes: buffer, encoding: .utf8))
         parser.parse(data: buffer)
     }
  

@@ -462,13 +462,23 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     @objc func longPress (_ gestureRecognizer: UILongPressGestureRecognizer)
     {
          if gestureRecognizer.state == .began {
-//             let _ = self.becomeFirstResponder()
-             let tapLocation = gestureRecognizer.location(in: gestureRecognizer.view)
-             let tapRegion = makeContextMenuRegionForTap (point: tapLocation)
-             
-             showContextMenu (forRegion: tapRegion,
-                              pos: calculateTapHit (gesture: gestureRecognizer).grid)
+            #if os(iOS)
+            UIDevice.current.playInputClick()
+            #endif
+             onSpaceKeyPressed?(gestureRecognizer.location(in: self))
+////             let _ = self.becomeFirstResponder()
+//             let tapLocation = gestureRecognizer.location(in: gestureRecognizer.view)
+//             let tapRegion = makeContextMenuRegionForTap (point: tapLocation)
+//             
+//             showContextMenu (forRegion: tapRegion,
+//                              pos: calculateTapHit (gesture: gestureRecognizer).grid)
           }
+        else if gestureRecognizer.state == .changed{
+            onSpaceKeyMove?(gestureRecognizer.location(in: self))
+        }
+        else{
+            onSpaceKeyReleased?()
+        }
     }
     
     /// This controls whether the backspace should send ^? or ^H, the default is ^?

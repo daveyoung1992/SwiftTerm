@@ -4393,7 +4393,6 @@ open class Terminal {
      */
     public func parse (buffer: ArraySlice<UInt8>)
     {
-        print(String(bytes: buffer, encoding: .utf8))
         parser.parse(data: buffer)
     }
  

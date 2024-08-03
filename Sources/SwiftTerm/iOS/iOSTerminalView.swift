@@ -644,7 +644,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     {
         timer?.invalidate()
         guard gestureRecognizer.view != nil else { return }
-               
+        
         if gestureRecognizer.state != .ended {
             return
         }
@@ -662,6 +662,12 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                 enableSelectionPanGesture()
                 showContextMenu (forRegion: makeContextMenuRegionForSelection(), pos: hit)
                 queuePendingDisplay()
+            }
+            else{
+#if os(iOS)
+                UIDevice.current.playInputClick()
+#endif
+                send([0x9])
             }
         }
     }

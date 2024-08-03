@@ -432,8 +432,9 @@ class SelectionService: CustomDebugStringConvertible {
             simpleScanSelection (from: position, in: buffer) { ch in ch.isLetter || ch.isNumber || ch == "." }
 //            simpleScanSelection (from: position, in: buffer) { ch in ch == nullChar }
         case " ":
+            return false
             // Select all white space
-            simpleScanSelection (from: position, in: buffer) { ch in ch == " " }
+//            simpleScanSelection (from: position, in: buffer) { ch in ch == " " }
         case let ch where ch.isLetter || ch.isNumber:
             simpleScanSelection (from: position, in: buffer) { ch in ch.isLetter || ch.isNumber || ch == "." }
         case "{":

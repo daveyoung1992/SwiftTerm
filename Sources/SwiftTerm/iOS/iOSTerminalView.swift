@@ -462,7 +462,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     @objc func longPress (_ gestureRecognizer: UILongPressGestureRecognizer)
     {
          if gestureRecognizer.state == .began {
-             let _ = self.becomeFirstResponder()
+//             let _ = self.becomeFirstResponder()
              let tapLocation = gestureRecognizer.location(in: gestureRecognizer.view)
              let tapRegion = makeContextMenuRegionForTap (point: tapLocation)
              
@@ -583,7 +583,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     @objc func singleTap (_ gestureRecognizer: UITapGestureRecognizer)
     {
         timer?.invalidate()
-        if isFirstResponder {
+//        if isFirstResponder {
             guard gestureRecognizer.view != nil else { return }
                  
             if gestureRecognizer.state != .ended {
@@ -596,7 +596,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                 if terminal.mouseMode.sendButtonRelease() {
                     sharedMouseEvent(gestureRecognizer: gestureRecognizer, release: true)
                 }
-            } else {
+            } else if isFirstResponder {
                 if selection.active {
                     selection.selectNone()
                     disableSelectionPanGesture()
@@ -617,11 +617,15 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                         
                     }
                 }
+                queuePendingDisplay()
             }
-            queuePendingDisplay()
-        } else {
-            let _ = becomeFirstResponder ()
-        }
+            else{
+                let _ = becomeFirstResponder ()
+            }
+            
+//        } else {
+//            let _ = becomeFirstResponder ()
+//        }
     }
     
     var timer:Timer?

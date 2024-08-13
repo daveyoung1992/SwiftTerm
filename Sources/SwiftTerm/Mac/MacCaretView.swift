@@ -20,6 +20,7 @@ class CaretView: NSView, CALayerDelegate {
     var ctline: CTLine?
     var bgColor: CGColor
     var tracksFocus = true
+    var _minWidth:CGFloat?
     
     public init (frame: CGRect, cursorStyle: CursorStyle, terminal: TerminalView)
     {
@@ -40,8 +41,8 @@ class CaretView: NSView, CALayerDelegate {
         let res = NSAttributedString (
             string: String (ch.getCharacter()),
             attributes: terminal?.getAttributedValue(ch.attribute, usingFg: caretColor, andBg: caretTextColor ?? terminal?.nativeForegroundColor ?? NSColor.black))
-        ctline = CTLineCreateWithAttributedString(res)
-
+        ctline = CTLineCreateWithAttributedString(res)        
+        self.frame.size = CGSize(width: max(getMinWidth(ch: ch),ctline!.totalWidth()), height: frame.height) // 根据字宽动态调整光标的宽度
         setNeedsDisplay(bounds)
     }
     
@@ -116,6 +117,17 @@ class CaretView: NSView, CALayerDelegate {
     override func hitTest(_ point: NSPoint) -> NSView? {
         // we do not want to steal hits, let the terminal view take them
         return nil
+    }
+    
+    func getMinWidth(ch:CharData) -> CGFloat{
+        if _minWidth == nil{
+            let res = NSAttributedString (
+                string: "a",
+                attributes: terminal?.getAttributedValue(ch.attribute, usingFg: caretColor, andBg: caretTextColor ?? terminal?.nativeForegroundColor ?? TTColor.black))
+            let ctline = CTLineCreateWithAttributedString(res)
+            _minWidth = ctline.totalWidth()
+        }
+        return _minWidth!
     }
 }
 #endif

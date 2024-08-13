@@ -36,6 +36,7 @@ import CoreGraphics
  * defaults, otherwise, this uses its own set of defaults colors.
  */
 open class TerminalView: NSView, NSTextInputClient, NSUserInterfaceValidations, TerminalDelegate {
+    
     struct FontSet {
         public let normal: NSFont
         let bold: NSFont

@@ -226,9 +226,10 @@ public protocol TerminalDelegate: AnyObject {
      */
     func createImage (source: Terminal, data: Data, width: ImageSizeRequest, height: ImageSizeRequest, preserveAspectRatio: Bool)
     
-    
+#if os(iOS) || os(visionOS)
     // 当选择框显示或隐藏时回调，用于显示和隐藏NavitaionView的返回按钮，不隐藏的情况下，选择文字时，容易误触发返回操作（从屏幕左侧右划）
     func selectionHandlerShowStateChange(isShow:Bool)
+#endif
 }
 
 /// Enumeration passed to the TerminalDelegate.createImage to configure

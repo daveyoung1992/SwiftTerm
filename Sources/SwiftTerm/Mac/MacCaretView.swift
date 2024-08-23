@@ -86,6 +86,7 @@ class CaretView: NSView, CALayerDelegate {
     
     public var caretColor: NSColor = NSColor.selectedControlColor {
         didSet {
+            bgColor = caretColor.cgColor
             updateView()
         }
     }

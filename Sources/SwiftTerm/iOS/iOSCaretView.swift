@@ -16,14 +16,14 @@ import CoreGraphics
 class CaretView: UIView {
     weak var terminal: TerminalView?
     var ctline: CTLine?
-//    var bgColor: CGColor
+    var bgColor: CGColor
     var tracksFocus = true
     var _minWidth:CGFloat?
     
     public init (frame: CGRect, cursorStyle: CursorStyle, terminal: TerminalView)
     {
         style = cursorStyle
-//        bgColor = caretColor.cgColor
+        bgColor = caretColor.cgColor
         self.terminal = terminal
         super.init(frame: frame)
         layer.isOpaque = false

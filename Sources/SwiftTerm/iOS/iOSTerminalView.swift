@@ -1289,14 +1289,14 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
 //    }
     
     
-    open override var textInputMode: UITextInputMode? {
-        get{
-            if let inputMode = UITextInputMode.activeInputModes.first(where: { $0.primaryLanguage == "en-US" || $0.primaryLanguage == "en" }) {
-                        return inputMode
-                    }
-            return .none
-        }
-    }
+//    open override var textInputMode: UITextInputMode? {
+//        get{
+//            if let inputMode = UITextInputMode.activeInputModes.first(where: { $0.primaryLanguage == "en-US" || $0.primaryLanguage == "en" }) {
+//                        return inputMode
+//                    }
+//            return .none
+//        }
+//    }
     
     public var keyboardAppearance: UIKeyboardAppearance = .`default`
     public var returnKeyType: UIReturnKeyType = .`default`

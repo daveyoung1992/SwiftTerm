@@ -630,8 +630,9 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                         showContextMenu (forRegion: makeContextMenuRegionForTap (point: location), pos: tapLoc)
                     }
                     else{
-                        timer=Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: { _ in
-                            let _ = self.resignFirstResponder()
+                        timer=Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: {[weak self] _ in
+                            self?.hideKeyboard()
+//                            let _ = self.resignFirstResponder()
                         })
                         
                     }
@@ -639,12 +640,21 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                 queuePendingDisplay()
             }
             else{
-                let _ = becomeFirstResponder ()
+                showKeyboard()
+//                let _ = becomeFirstResponder ()
             }
             
 //        } else {
 //            let _ = becomeFirstResponder ()
 //        }
+    }
+    
+    open func showKeyboard(){
+        let _ = becomeFirstResponder ()
+    }
+    
+    open func hideKeyboard(){
+        let _ = self.resignFirstResponder()
     }
     
     var timer:Timer?

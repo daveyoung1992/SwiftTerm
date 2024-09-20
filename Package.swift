@@ -11,8 +11,6 @@ let package = Package(
         .visionOS(.v1)
     ],
     products: [
-        .executable(name: "SwiftTermFuzz", targets: ["SwiftTermFuzz"]),
-        //.executable(name: "CaptureOutput", targets: ["CaptureOutput"]),
         .library(
             name: "SwiftTerm",
             targets: ["SwiftTerm"]

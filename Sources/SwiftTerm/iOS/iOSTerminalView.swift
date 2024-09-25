@@ -1016,9 +1016,37 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
     public override var inputView: UIView? {
         get { _inputView }
         set {
+            newValue?.frame.size.height = getKeyboardHeight()
             _inputView = newValue
+            reloadInputViews()
         }
     }
+    var windowSafeAreaInsets:UIEdgeInsets{
+        var top = 0.0
+        var left = 0.0
+        var right = 0.0
+        var bottom = 0.0
+        var parentView = superview
+        while parentView != nil{
+            top += parentView!.safeAreaInsets.top
+            left += parentView!.safeAreaInsets.left
+            right += parentView!.safeAreaInsets.right
+            bottom += parentView!.safeAreaInsets.bottom
+            parentView = parentView?.superview
+            if bottom > 0 || top > 0 || right > 0 || right > 0{
+                break
+            }
+        }
+        return .init(top: top, left: left, bottom: bottom, right: right)
+    }
+    
+    // 返回键盘高度，基于设备方向
+        private func getKeyboardHeight() -> CGFloat {
+            
+            return 162 + windowSafeAreaInsets.bottom
+//            let isPortrait = UIScreen.main.bounds.height > UIScreen.main.bounds.width
+//            return isPortrait ? 216 : 162
+        }
 
     /// Returns the inputaccessory in case it is a TerminalAccessory and we can use it
     var terminalAccessory: TerminalAccessory? {
@@ -1431,6 +1459,7 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
             
             terminalAccessory?.cancelTimer()
         }
+        self.inputView = nil
         return code
     }
     var keyRepeat: Timer?

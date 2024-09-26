@@ -631,8 +631,14 @@ open class TerminalView: UIScrollView, UITextInputTraits, UIKeyInput, UIScrollVi
                     }
                     else{
                         timer=Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: {[weak self] _ in
-                            self?.hideKeyboard()
-//                            let _ = self.resignFirstResponder()
+                            guard let self else{return}
+                            if inputView != nil{
+                                inputView = nil
+                                reloadInputViews()
+                            }
+                            else{
+                                hideKeyboard()
+                            }
                         })
                         
                     }

@@ -241,6 +241,15 @@ extension TerminalView {
         self.colorsChanged()
     }
     
+    public func changeColors(foregroundColor:Color,backgroundColor:Color,cursorColor:Color,ansiColors:[Color]){
+        terminal.installPalette(colors: ansiColors)
+        self.colors = Array(repeating: nil, count: 256)
+        nativeBackgroundColor = TTColor.make (color: backgroundColor)
+        nativeForegroundColor = TTColor.make (color: foregroundColor)
+        setCursorColor(source: getTerminal(), color: cursorColor)
+        self.colorsChanged()
+    }
+    
     public func colorChanged (source: Terminal, idx: Int?)
     {
         if let index = idx {
